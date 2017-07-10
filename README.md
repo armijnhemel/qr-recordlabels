@@ -6,3 +6,4 @@ A few notes:
 
 * the labels are generated for a particular label layout (A4, 3 columns, 8 rows) because those are the only labels that I have available right now
 * only Discogs collection CSV dumps can be processed, not any of the other lists
+* depending on your printer some of the labels might not be printed correctly. This is because some printers cannot print borderless

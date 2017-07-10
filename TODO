@@ -1,0 +1,3 @@
+* make dimensions configurable
+* add profiles for much used label formats or label printers
+* allow filtering for CollectionFolder, Format, etc.
