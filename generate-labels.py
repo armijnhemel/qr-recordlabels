@@ -79,7 +79,7 @@ def main(argv):
 	## store profile
 	profile = {}
 
-	reverse_columns = False
+	swap_columns = False
 
 	for section in config.sections():
 		if section == "general":
@@ -88,9 +88,9 @@ def main(argv):
 			except:
 				break
 			try:
-				tmpval = config.get(section, "reverse-columns")
+				tmpval = config.get(section, "swap-columns")
 				if tmpval == 'yes':
-					reverse_columns = True
+					swap_columns = True
 			except:
 				pass
 		elif section == args.profile:
@@ -181,7 +181,7 @@ def main(argv):
 	## * text
 	## * QR code
 	## These are them combined.
-	## The default ordering is: text left, image right, unless the columns are reversed
+	## The default ordering is: text left, image right, unless the columns are swapped
 
 	# container for the 'Flowable' objects
 	elements = []
@@ -214,7 +214,7 @@ def main(argv):
 		#qrhtml = Paragraph("<b>Artist:</b> %s<br /><b>Title:</b> %s<br /><b>Catalogue No.:</b> %s" % (artist, title, catalogue_number), styleSheet["BodyText"])
 		#qrhtml = Paragraph("<b>Artist:</b> %s<br /><b>Title:</b> %s<br /><b>Price:</b> &euro; 50" % (artist, title), styleSheet["BodyText"])
 		qrhtml = Paragraph("<b>Artist:</b> %s<br /><b>Title:</b> %s" % (artist, title), styleSheet["BodyText"])
-		if reverse_columns:
+		if swap_columns:
 			tmpqueue.append(qrimage)
 			tmpqueue.append(qrhtml)
 		else:
