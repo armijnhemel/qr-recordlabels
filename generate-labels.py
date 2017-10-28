@@ -87,14 +87,23 @@ def main(argv):
 				config.get(section, "type")
 			except:
 				break
+			## first check if there is a page size
 			try:
-				profile['height'] = float(config.get(section, 'height'))
+				pagesize = config.get(section, 'pagesize')
+				if pagesize == 'A4':
+					profile['pagesize'] = A4
 			except:
-				break
-			try:
-				profile['width'] = float(config.get(section, 'width'))
-			except:
-				break
+				pass
+
+			if not 'pagesize' in profile:
+				try:
+					profile['height'] = int(config.get(section, 'height'))
+				except:
+					break
+				try:
+					profile['width'] = int(config.get(section, 'width'))
+				except:
+					break
 			try:
 				profile['rows'] = int(config.get(section, 'rows'))
 			except:
@@ -109,11 +118,9 @@ def main(argv):
 				## default: points
 				unit = config.get(section, 'unit')
 				if unit == 'mm':
-					profile['unit'] = 'mm'
-				else:
-					profile['unit'] = ''
+					profile['unit'] = mm
 			except:
-				profile['unit'] = ''
+				pass
 	if profile == {}:
 		print >>sys.stderr, "ERROR: empty profile, exiting"
 		sys.exit(1)
@@ -148,12 +155,15 @@ def main(argv):
 	if len(csvlines) == 0:
 		sys.exit(0)
 
-	## Dymo 11356 labels
-	#pagesize = (89*mm, 41*mm)
-	pagesize = A4
+	if not 'pagesize' in profile:
+		if 'unit' in profile:
+			profile['pagesize'] = (profile['width']*profile['unit'],profile['height']*profile['unit'])
+		else:
+			profile['pagesize'] = (profile['width'], profile['height'])
+
 	## create a document for reportlab
 	## set the margins as close to the edge as possible. I needed an ugly hack with the topMargin value
-	qrdoc = SimpleDocTemplate(args.outfile, leftMargin=0, rightMargin=0, topMargin=-4*mm, bottomMargin=0, pagesize=pagesize, allow_splitting=0)
+	qrdoc = SimpleDocTemplate(args.outfile, leftMargin=0, rightMargin=0, topMargin=-4*mm, bottomMargin=0, pagesize=profile['pagesize'], allow_splitting=0)
 
 	## create a table for reportlab
 	## labels are basically six columns:
