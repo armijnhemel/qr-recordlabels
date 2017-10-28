@@ -79,9 +79,20 @@ def main(argv):
 	## store profile
 	profile = {}
 
+	reverse_columns = False
+
 	for section in config.sections():
 		if section == "general":
-			pass
+			try:
+				config.get(section, "type")
+			except:
+				break
+			try:
+				tmpval = config.get(section, "reverse-columns")
+				if tmpval == 'yes':
+					reverse_columns = True
+			except:
+				pass
 		elif section == args.profile:
 			try:
 				config.get(section, "type")
@@ -166,9 +177,12 @@ def main(argv):
 	qrdoc = SimpleDocTemplate(args.outfile, leftMargin=0, rightMargin=0, topMargin=-4*mm, bottomMargin=0, pagesize=profile['pagesize'], allow_splitting=0)
 
 	## create a table for reportlab
-	## labels are basically six columns:
-	## 1, 3, 5 :: text
-	## 2, 4, 6 :: QR code
+	## each label basically consists of two parts:
+	## * text
+	## * QR code
+	## These are them combined.
+	## The default ordering is: text left, image right, unless the columns are reversed
+
 	# container for the 'Flowable' objects
 	elements = []
  
@@ -189,6 +203,7 @@ def main(argv):
 
 		## now generate a QR image with a valid discogs URL
 		qrurl = QrCodeWidget('https://www.discogs.com/release/%s' % str(release_id))
+		qrurl = QrCodeWidget('https://www.discogs.com/release/%s' % str(release_id))
 
 		## set the dimensions for the Drawing
 		qrimage = Drawing(35*mm,35*mm)
@@ -199,8 +214,12 @@ def main(argv):
 		#qrhtml = Paragraph("<b>Artist:</b> %s<br /><b>Title:</b> %s<br /><b>Catalogue No.:</b> %s" % (artist, title, catalogue_number), styleSheet["BodyText"])
 		#qrhtml = Paragraph("<b>Artist:</b> %s<br /><b>Title:</b> %s<br /><b>Price:</b> &euro; 50" % (artist, title), styleSheet["BodyText"])
 		qrhtml = Paragraph("<b>Artist:</b> %s<br /><b>Title:</b> %s" % (artist, title), styleSheet["BodyText"])
-		tmpqueue.append(qrhtml)
-		tmpqueue.append(qrimage)
+		if reverse_columns:
+			tmpqueue.append(qrimage)
+			tmpqueue.append(qrhtml)
+		else:
+			tmpqueue.append(qrhtml)
+			tmpqueue.append(qrimage)
 		if counter%profile['columns'] == 0:
 			data.append(tmpqueue)
 			tmpqueue = []
