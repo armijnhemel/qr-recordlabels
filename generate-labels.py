@@ -201,7 +201,7 @@ def main(argv):
 		qrhtml = Paragraph("<b>Artist:</b> %s<br /><b>Title:</b> %s" % (artist, title), styleSheet["BodyText"])
 		tmpqueue.append(qrhtml)
 		tmpqueue.append(qrimage)
-		if counter%3 == 0:
+		if counter%profile['columns'] == 0:
 			data.append(tmpqueue)
 			tmpqueue = []
 		counter += 1
