@@ -81,6 +81,9 @@ def main(argv):
 
 	swap_columns = False
 
+	## fields from CSV that need to be printed
+	fields = []
+
 	for section in config.sections():
 		if section == "general":
 			try:
@@ -103,6 +106,8 @@ def main(argv):
 				pagesize = config.get(section, 'pagesize')
 				if pagesize == 'A4':
 					profile['pagesize'] = A4
+					## also set the units for A4
+					profile['unit'] = mm
 			except:
 				pass
 
@@ -132,6 +137,13 @@ def main(argv):
 					profile['unit'] = mm
 			except:
 				pass
+			try:
+				fields = config.get(section, 'fields').split(':')
+				if fields == []:
+					fields = ['artist', 'title']
+			except:
+				## default is artist and title
+				fields = ['artist', 'title']
 	if profile == {}:
 		print >>sys.stderr, "ERROR: empty profile, exiting"
 		sys.exit(1)
@@ -174,14 +186,15 @@ def main(argv):
 
 	## create a document for reportlab
 	## set the margins as close to the edge as possible. I needed an ugly hack with the topMargin value
-	qrdoc = SimpleDocTemplate(args.outfile, leftMargin=0, rightMargin=0, topMargin=-4*mm, bottomMargin=0, pagesize=profile['pagesize'], allow_splitting=0)
+	qrdoc = SimpleDocTemplate(args.outfile, leftMargin=0, rightMargin=0, topMargin=-4*profile['unit'], bottomMargin=0, pagesize=profile['pagesize'], allow_splitting=0)
 
 	## create a table for reportlab
-	## each label basically consists of two parts:
+	## each label basically consists of two columns:
 	## * text
 	## * QR code
-	## These are them combined.
-	## The default ordering is: text left, image right, unless the columns are swapped
+	## These are combined to form the final label.
+	## The default ordering is: text left, image right, unless the program has been configured
+	## to swap the columns.
 
 	# container for the 'Flowable' objects
 	elements = []
@@ -196,13 +209,13 @@ def main(argv):
 
 	## Discogs collection export looks like this:
 	## ['Catalog#', 'Artist', 'Title', 'Label', 'Format', 'Rating', 'Released', 'release_id', 'CollectionFolder', 'Date Added', 'Collection Media Condition', 'Collection Sleeve Condition', 'Collection Notes']
+	## By default just 'Artist' and 'Title' are added.
 	counter = 1
 	tmpqueue = []
 	for r in csvlines:
 		(catalogue_number, artist, title, label, disc_format, rating, released, release_id, collectionfolder, date_added, media_condition, sleeve_condition, notes) = r
 
 		## now generate a QR image with a valid discogs URL
-		qrurl = QrCodeWidget('https://www.discogs.com/release/%s' % str(release_id))
 		qrurl = QrCodeWidget('https://www.discogs.com/release/%s' % str(release_id))
 
 		## set the dimensions for the Drawing
@@ -211,9 +224,23 @@ def main(argv):
 		## add the QR code to the drawing
 		qrimage.add(qrurl)
     
-		#qrhtml = Paragraph("<b>Artist:</b> %s<br /><b>Title:</b> %s<br /><b>Catalogue No.:</b> %s" % (artist, title, catalogue_number), styleSheet["BodyText"])
-		#qrhtml = Paragraph("<b>Artist:</b> %s<br /><b>Title:</b> %s<br /><b>Price:</b> &euro; 50" % (artist, title), styleSheet["BodyText"])
-		qrhtml = Paragraph("<b>Artist:</b> %s<br /><b>Title:</b> %s" % (artist, title), styleSheet["BodyText"])
+		qrhtmltext = ""
+		fieldcounter = 1
+		for f in fields:
+			if f == 'artist':
+				qrhtmltext += "<b>Artist:</b> %s" % artist
+			elif f == 'title':
+				qrhtmltext += "<b>Title:</b> %s" % title
+			elif f == 'sleeve':
+				qrhtmltext += "<b>Sleeve Condition:</b> %s" % sleeve_condition
+			elif f == 'media':
+				qrhtmltext += "<b>Media Condition:</b> %s" % media_condition
+			elif f == 'catalogue':
+				qrhtmltext += "<b>Catalogue No.::</b> %s" % catalogue_number
+			if fieldcounter < len(fields):
+				qrhtmltext += "<br />"
+			fieldcounter += 1
+		qrhtml = Paragraph(qrhtmltext, styleSheet["BodyText"])
 		if swap_columns:
 			tmpqueue.append(qrimage)
 			tmpqueue.append(qrhtml)
@@ -229,7 +256,7 @@ def main(argv):
 	if tmpqueue != []:
 		data.append(tmpqueue)
         
-	t=Table(data, colWidths=35*mm, rowHeights=37*mm, style=[
+	t=Table(data, colWidths=35*profile['unit'], rowHeights=37*profile['unit'], style=[
                     ('TOPMARGIN',(0,0), (-1, -1), 0),
                     ('BOTTOMMARGIN',(0,0), (-1, -1), 0),
                     ('LEFTMARGIN',(0,0), (-1, -1), 0),
