@@ -75,7 +75,7 @@ def main(argv):
     except:
         configfile.close()
         parser.error("Configuration file not readable")
-    config.readfp(configfile)
+    config.read_file(configfile)
     configfile.close()
 
     # check wheher or not the name of the profile provided
@@ -97,18 +97,18 @@ def main(argv):
         if section == "general":
             try:
                 config.get(section, "type")
-            except:
+            except configparser.NoOptionError:
                 break
             try:
                 tmpval = config.get(section, "swap-columns")
                 if tmpval == 'yes':
                     swap_columns = True
-            except:
+            except configparser.NoOptionError:
                 pass
         elif section == args.profile:
             try:
                 config.get(section, "type")
-            except:
+            except configparser.NoOptionError:
                 break
             # first check if there is a page size
             try:
@@ -117,7 +117,7 @@ def main(argv):
                     profile['pagesize'] = A4
                     # also set the units for A4
                     profile['unit'] = mm
-            except:
+            except configparser.NoOptionError:
                 pass
 
             if 'pagesize' not in profile:
@@ -144,13 +144,13 @@ def main(argv):
                 unit = config.get(section, 'unit')
                 if unit == 'mm':
                     profile['unit'] = mm
-            except:
+            except configparser.NoOptionError:
                 pass
             try:
                 fields = config.get(section, 'fields').split(':')
                 if fields == []:
                     fields = ['artist', 'title']
-            except:
+            except configparser.NoOptionError:
                 # default is artist and title
                 fields = ['artist', 'title']
     if profile == {}:
