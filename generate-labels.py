@@ -192,6 +192,9 @@ def main(argv):
             profile['pagesize'] = (profile['width']*profile['unit'], profile['height']*profile['unit'])
         else:
             profile['pagesize'] = (profile['width'], profile['height'])
+        dims = min(profile['width'], profile['height']) - 5
+    else:
+        dims = 35
 
     # create a document for reportlab
     # set the margins as close to the edge as possible.
@@ -200,8 +203,10 @@ def main(argv):
 
     # create a table for reportlab
     # each label basically consists of two columns:
+    #
     # * text
-    # * QR code
+    # * QR code image
+    #
     # These are combined to form the final label.
     # The default ordering is: text left, image right, unless
     # the program has been configured to swap the columns.
@@ -214,8 +219,6 @@ def main(argv):
     styleSheet = getSampleStyleSheet()
     qrTableStyle = styleSheet['BodyText']
     qrTableStyle.leading = 10
-
-    cleanup = True
 
     # Discogs collection export looks like this:
     # ['Catalog#', 'Artist', 'Title', 'Label', 'Format', 'Rating',
@@ -231,29 +234,32 @@ def main(argv):
         # now generate a QR image with a valid discogs URL
         qrurl = QrCodeWidget('https://www.discogs.com/release/%s' % str(release_id))
 
-        # set the dimensions for the Drawing
-        qrimage = Drawing(35*mm, 35*mm)
+        # set the dimensions for the Drawing, which is a square
+        qrimage = Drawing(dims*profile['unit'], dims*profile['unit'])
 
         # add the QR code to the drawing
         qrimage.add(qrurl)
 
+        # create the HTML with the text
         qrhtmltext = ""
         fieldcounter = 1
-        for f in fields:
-            if f == 'artist':
+        for field in fields:
+            if field == 'artist':
                 qrhtmltext += "<b>Artist:</b> %s" % artist
-            elif f == 'title':
+            elif field == 'title':
                 qrhtmltext += "<b>Title:</b> %s" % title
-            elif f == 'sleeve':
+            elif field == 'sleeve':
                 qrhtmltext += "<b>Sleeve Condition:</b> %s" % sleeve_condition
-            elif f == 'media':
+            elif field == 'media':
                 qrhtmltext += "<b>Media Condition:</b> %s" % media_condition
-            elif f == 'catalogue':
+            elif field == 'catalogue':
                 qrhtmltext += "<b>Catalogue No.::</b> %s" % catalogue_number
             if fieldcounter < len(fields):
                 qrhtmltext += "<br />"
             fieldcounter += 1
         qrhtml = Paragraph(qrhtmltext, styleSheet["BodyText"])
+
+        # add the image and HTML to the data queue in the desired order
         if swap_columns:
             tmpqueue.append(qrimage)
             tmpqueue.append(qrhtml)
@@ -265,21 +271,24 @@ def main(argv):
             tmpqueue = []
         counter += 1
 
-    # add any data that hasn't been added yet
+    # add any data that hasn't yet been added to the data queue
     if tmpqueue != []:
         data.append(tmpqueue)
 
-    t = Table(data, colWidths=35*profile['unit'], rowHeights=37*profile['unit'],
-              style=[('TOPMARGIN', (0, 0), (-1, -1), 0),
-                     ('BOTTOMMARGIN', (0, 0), (-1, -1), 0),
-                     ('LEFTMARGIN', (0, 0), (-1, -1), 0),
-                     ('RIGHTMARGIN', (0, 0), (-1, -1), 0),
-                     ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                     ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                     # set INNERGRID for debugging
-                     #('INNERGRID', (0, 0), (-1,-1), 0.25, colors.black)
-                    ])
-    elements.append(t)
+    # pour the data queue into a table. For some reason I have to
+    # add 2 to the row heights which is a TODO.
+    qr_table = Table(data, colWidths=dims*profile['unit'],
+                     rowHeights=(dims+2)*profile['unit'],
+                     style=[('TOPMARGIN', (0, 0), (-1, -1), 0),
+                            ('BOTTOMMARGIN', (0, 0), (-1, -1), 0),
+                            ('LEFTMARGIN', (0, 0), (-1, -1), 0),
+                            ('RIGHTMARGIN', (0, 0), (-1, -1), 0),
+                            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                            # set INNERGRID for debugging
+                            #('INNERGRID', (0, 0), (-1,-1), 0.25, colors.black)
+                           ])
+    elements.append(qr_table)
 
     # finally generate the document with all the QR codes
     qrdoc.build(elements)
