@@ -199,7 +199,9 @@ def main(argv):
     # create a document for reportlab
     # set the margins as close to the edge as possible.
     # I needed an ugly hack with the topMargin value
-    qrdoc = SimpleDocTemplate(args.outfile, leftMargin=0, rightMargin=0, topMargin=-4*profile['unit'], bottomMargin=0, pagesize=profile['pagesize'], allow_splitting=0)
+    qrdoc = SimpleDocTemplate(args.outfile, leftMargin=0, rightMargin=0,
+                              topMargin=-4*profile['unit'], bottomMargin=0,
+                              pagesize=profile['pagesize'], allow_splitting=0)
 
     # create a table for reportlab
     # each label basically consists of two columns:
